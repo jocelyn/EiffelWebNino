@@ -37,6 +37,6 @@ feature {NONE} -- Initialization
 
 feature -- Access
 
-	default_document_root: STRING = "webroot"
+	default_document_root: STRING = "../webroot"
 
 end

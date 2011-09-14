@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<system xmlns="http://www.eiffel.com/developers/xml/configuration-1-8-0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.eiffel.com/developers/xml/configuration-1-8-0 http://www.eiffel.com/developers/xml/configuration-1-8-0.xsd" name="nino_scoop" uuid="8CBDC985-6FEA-4D40-BEF3-C32A5392E012" library_target="nino_scoop">
+	<target name="nino_scoop">
+		<root all_classes="true"/>
+		<file_rule>
+			<exclude>/.git$</exclude>
+			<exclude>/EIFGENs$</exclude>
+			<exclude>/CVS$</exclude>
+			<exclude>/.svn$</exclude>
+		</file_rule>
+		<option warning="true" is_attached_by_default="true" void_safety="all">
+			<assertions precondition="true" postcondition="true" check="true" invariant="true" loop="true" supplier_precondition="true"/>
+		</option>
+		<setting name="concurrency" value="scoop"/>
+		<library name="base" location="$ISE_LIBRARY\library\base\base-safe.ecf"/>
+		<library name="net" location="$ISE_LIBRARY\library\net\net-safe.ecf"/>
+		<cluster name="nino" location=".\library\" recursive="true">
+		</cluster>
+	</target>
+</system>
