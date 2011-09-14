@@ -8,20 +8,19 @@ deferred class
 	HTTP_HANDLER
 
 inherit
-	THREAD
 
 	HTTP_CONSTANTS
 
 feature {NONE} -- Initialization
 
-	make (a_main_server: like main_server; a_name: STRING)
+	make (a_main_server: separate HTTP_SERVER)
 			-- Creates a {HTTP_HANDLER}, assigns the main_server and initialize various values
 			--
 			-- `a_main_server': The main server object
 			-- `a_name': The name of this module
 		require
 			a_main_server_attached: a_main_server /= Void
-			a_name_attached: a_name /= Void
+			--a_name_attached: a_name /= Void
 		do
 			main_server := a_main_server
 			is_stop_requested := False
@@ -39,13 +38,13 @@ feature -- Inherited Features
 			l_http_port: INTEGER
 		do
 			is_stop_requested := False
-			l_http_port := main_server_configuration.http_server_port
+			l_http_port := http_server_port (main_server_configuration (main_server))
 			create l_http_socket.make_server_by_port (l_http_port)
 			if not l_http_socket.is_bound then
 				print ("Socket could not be bound on port " + l_http_port.out )
 			else
 				from
-					l_http_socket.listen (main_server_configuration.max_tcp_clients)
+					l_http_socket.listen (max_tcp_clients (main_server_configuration (main_server)))
 					print ("%NHTTP Connection Server ready on port " + l_http_port.out +"%N")
 				until
 					is_stop_requested
@@ -60,7 +59,7 @@ feature -- Inherited Features
 							end
 						end
 					end
-					is_stop_requested := main_server.stop_requested
+					is_stop_requested := stop_requested (main_server)
 				end
 				l_http_socket.cleanup
 				check
@@ -88,13 +87,28 @@ feature -- Access
 
 feature {NONE} -- Access
 
-	main_server: HTTP_SERVER
+	main_server: separate HTTP_SERVER
 			-- The main server object
 
-	main_server_configuration: HTTP_SERVER_CONFIGURATION
+	main_server_configuration (server: separate HTTP_SERVER): separate HTTP_SERVER_CONFIGURATION
 			-- The main server's configuration
 		do
-			Result := main_server.configuration
+			Result := server.configuration
+		end
+
+	http_server_port (conf: separate HTTP_SERVER_CONFIGURATION): INTEGER
+		do
+			Result := conf.http_server_port
+		end
+
+	max_tcp_clients (conf: separate HTTP_SERVER_CONFIGURATION): INTEGER
+		do
+			Result := conf.max_tcp_clients
+		end
+
+	stop_requested (server: separate HTTP_SERVER): BOOLEAN
+		do
+			Result := server.stop_requested
 		end
 
 	Max_fragments: INTEGER = 1000
