@@ -15,7 +15,7 @@ create
 
 feature -- Request processing
 
-	process_request (a_handler: HTTP_CONNECTION_HANDLER; a_socket: TCP_STREAM_SOCKET)
+	process_request (a_handler: USER_CONNECTION_HANDLER; a_socket: TCP_STREAM_SOCKET)
 			-- Process request ...
 		local
 			a_method: STRING

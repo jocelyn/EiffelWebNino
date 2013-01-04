@@ -26,7 +26,8 @@ feature -- Initialization
 				log ("Starting Web Application Server (port="+ configuration.http_server_port.out +"):%N")
 			end
 			stop_requested := False
-			a_http_handler.execute
+			a_http_handler.launch
+			run
 		end
 
 	shutdown_server
@@ -50,7 +51,22 @@ feature -- Output
 			io.put_string (a_message)
 		end
 
+feature -- implementation
+
+	run
+			-- Start the server
+		local
+			l_thread: EXECUTION_ENVIRONMENT
+		do
+			create l_thread
+			from until stop_requested	loop
+				l_thread.sleep (1000000)
+			end
+
+		end
+
+
 ;note
-	copyright: "2011-2011, Javier Velilla and others"
+	copyright: "2011-2013, Javier Velilla and others"
 	license: "Eiffel Forum License v2 (see http://www.eiffel.com/licensing/forum.txt)"
 end

@@ -11,10 +11,13 @@ inherit
 
 create
 	make_server_by_address_and_port,
-	make_server_by_port
+	make_server_by_port,
+    create_from_descriptor,
+    make
 
 create {NETWORK_STREAM_SOCKET}
 	make_from_descriptor_and_address
+
 
 feature {NONE} -- Initialization
 
@@ -65,8 +68,8 @@ feature -- Status report
 			retval := c_select_poll_with_timeout (descriptor, True, 0)
 			Result := (retval > 0)
 		end
-	
+
 note
-	copyright: "2011-2011, Javier Velilla and others"
+	copyright: "2011-2012, Javier Velilla and others"
 	license: "Eiffel Forum License v2 (see http://www.eiffel.com/licensing/forum.txt)"
 end
