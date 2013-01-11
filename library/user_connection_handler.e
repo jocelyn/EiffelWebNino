@@ -6,17 +6,19 @@ note
 
 class
 	USER_CONNECTION_HANDLER
+
 create
 	make
 
 feature -- Initialization
 
-    make (tid : INTEGER; socket_descriptor: INTEGER;  verbose : BOOLEAN)
+    make (a_id: NATURAL_64; socket_descriptor: INTEGER;  verbose : BOOLEAN)
 	    -- create with an ID and a file descriptor
     	do
 
         	create socket.create_from_descriptor (socket_descriptor)
-        	id := tid
+        	connection_id := a_id
+        	persistent_connection_id := 0
         	is_verbose := verbose
         	reset
         rescue
@@ -25,11 +27,11 @@ feature -- Initialization
         	end
     	end
 
-
-  reset
+	reset
 		do
 			has_error := False
-			is_persistent := false
+			is_persistent := False
+			keep_alive_time := 30 -- seconds
 			create method.make_empty
 			create uri.make_empty
 			create request_header.make_empty
@@ -61,6 +63,9 @@ feature -- Initialization
 	is_persistent: BOOLEAN
 			-- is a persistent connection present?
 
+	keep_alive_time: INTEGER
+			-- Keep-alive time (default: 30sec)
+
 	version: detachable STRING
 			--  http_version
 			--| unused for now
@@ -76,14 +81,16 @@ feature -- Initialization
                 Result := true
 
                 if is_verbose then
-                    log("INFO: Request for user:"+ id.out+ "Error while serving: invalidated socket")
+                	if is_persistent then
+	                    log("INFO: Request for user:"+ id.out + "Error while serving: invalidated socket")
+	                else
+	                	log("INFO: Request for user:"+ id.out + "." + persistent_connection_id.out + "Error while serving: invalidated socket")
+                	end
                 end
            end
          end
 
-
 feature -- info
-
 
 	set_remote_info
 		local
@@ -101,7 +108,7 @@ feature -- info
 
 	set_done
 		do
-			done:=True
+			done := True
 		end
 
 feature -- Parsing
@@ -119,6 +126,8 @@ feature -- Parsing
         do
             create txt.make (64)
 			request_header := txt
+
+			persistent_connection_id := persistent_connection_id + 1
 
 
 			if attached next_line (socket) as l_request_line and then not l_request_line.is_empty then
@@ -163,9 +172,23 @@ feature -- Parsing
 					end
 				end
 			end
-			if attached request_header_map.item ("Connection") as l_connection_header and then
-				l_connection_header.is_case_insensitive_equal ("keep-alive") then
+			if
+				attached request_header_map.item ("Connection") as l_connection_header and then
+				l_connection_header.is_case_insensitive_equal ("keep-alive")
+			then
 				is_persistent := True
+				if
+					attached request_header_map.item ("Keep-Alive") as l_keep_alive_header and then
+					l_keep_alive_header.is_integer
+				then
+					keep_alive_time := l_keep_alive_header.to_integer
+				else
+					keep_alive_time := 30 -- default
+				end
+			else
+				is_persistent := False
+				keep_alive_time := 0
+				persistent_connection_id := 0
 			end
 		end
 
@@ -193,9 +216,8 @@ feature -- Parsing
 		require
 			is_readable: a_socket.is_open_read
 		local
-			current_retries: INTEGER
+--			current_retries: INTEGER
 		do
-
 			if a_socket.socket_ok and not a_socket.bad_socket_handle  then
 				a_socket.read_line_thread_aware
 				Result := a_socket.last_string
@@ -206,11 +228,20 @@ feature -- Parsing
 			end
 		end
 
-
-
  feature -- Implementation
- 	socket             : TCP_STREAM_SOCKET
-    id                 : INTEGER
+
+ 	socket: TCP_STREAM_SOCKET
+    connection_id: NATURAL_64
+
+    persistent_connection_id: NATURAL_32
+    		-- when `is_persistent' is True
+
+    id: INTEGER
+    	obsolete "use `connection_id' [2013-jan]"
+    	do
+    		Result := connection_id.to_integer_32
+    	end
+
     is_verbose : BOOLEAN
 
 
@@ -225,8 +256,11 @@ feature -- Output
 	log (a_message: READABLE_STRING_8)
 			-- Log `a_message'
 		do
-			io.put_string (a_message)
-			io.put_new_line
+			if persistent_connection_id > 0 then
+				io.put_string ("#" + connection_id.out + "." + persistent_connection_id.out + " " + a_message + "%N")
+			else
+				io.put_string ("#" + connection_id.out + " " + a_message + "%N")
+			end
 		end
 
 invariant

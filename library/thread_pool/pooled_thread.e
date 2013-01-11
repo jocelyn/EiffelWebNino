@@ -69,7 +69,7 @@ feature {NONE} -- Implementation
 					if attached {G} target as l_target then
 						l_work.call ([l_target])
 					else
-							l_work.call ([])
+						l_work.call (Void)
 					end
 				end
 				if thread_pool.over then

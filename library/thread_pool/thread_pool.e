@@ -1,7 +1,7 @@
 note
 	description: "[
-		A thread pool manager. Manages threads up to `capacity' and queue after that,
-		till threads get available again.
+			A thread pool manager. Manages threads up to `capacity' and queue after that,
+			till threads get available again.
 		]"
 	legal: "See notice at end of class."
 	status: "Community Preview 1.0"
@@ -49,22 +49,22 @@ feature {NONE} -- Initialization
 			work_queue_set: work_queue.is_empty
 		end
 
-		initialize_threads
-				-- Launches all threads
-			local
-				i: NATURAL
-				thread: POOLED_THREAD [G]
-			do
-				from
-					i := 1
-				until
-					i > capacity
-				loop
-					create thread.make (Current, work_semaphore)
-					thread.launch
-					i := i + 1
-				end
+	initialize_threads
+			-- Launches all threads
+		local
+			i: NATURAL
+			thread: POOLED_THREAD [G]
+		do
+			from
+				i := 1
+			until
+				i > capacity
+			loop
+				create thread.make (Current, work_semaphore)
+				thread.launch
+				i := i + 1
 			end
+		end
 
 feature -- Access
 

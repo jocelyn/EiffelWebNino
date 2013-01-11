@@ -1,10 +1,10 @@
 note
-	description: "Summary description for {HTTP_CONNECTION_HANDLER}."
+	description: "Summary description for {HTTP_LISTENER}."
 	date: "$Date$"
 	revision: "$Revision$"
 
 deferred class
-	HTTP_HANDLER
+	HTTP_LISTENER
 
 inherit
 	ANY
@@ -19,7 +19,7 @@ inherit
 feature {NONE} -- Initialization
 
 	make (a_server: like server)
-			-- Creates a {HTTP_HANDLER}, assigns the server and initialize various values
+			-- Creates a {HTTP_LISTENER}, assigns the server and initialize various values
 			--
 			-- `a_server': The main server object
 		require
@@ -28,11 +28,10 @@ feature {NONE} -- Initialization
 			thread_make
 			server := a_server
 			is_stop_requested := False
-		    create client_sockets.make (max_tcp_clients)
 				--store client sockets
 				--|TODO figure out the best value		
-			create pool.make(max_tcp_clients.to_natural_32)
-				--Create a pool of threads
+			create pool.make (10)--max_tcp_clients.to_natural_32)
+				-- Create a pool of threads
 		ensure
 			server_set: a_server ~ server
 		end
@@ -42,8 +41,7 @@ feature -- Output
 	log (a_message: READABLE_STRING_8)
 			-- Log `a_message'
 		do
-			io.put_string (a_message)
-			io.put_new_line
+			io.error.put_string (a_message + "%N")
 		end
 
 feature -- Inherited Features
@@ -55,10 +53,9 @@ feature -- Inherited Features
 		local
 			l_listening_socket: detachable TCP_STREAM_SOCKET
 			l_http_port: INTEGER
-			tid : INTEGER
-			work_agent: PROCEDURE [ANY, TUPLE]
+			connection_id : NATURAL_64
 		do
-			tid := 0
+			connection_id := 0
 			launched := False
 			port := 0
 			is_stop_requested := False
@@ -92,10 +89,10 @@ feature -- Inherited Features
 				loop
 					l_listening_socket.accept
 					if not is_stop_requested then
-						if attached l_listening_socket.accepted as l_thread_http_socket then
-							work_agent := agent process_connection (l_thread_http_socket, tid)
-							pool.add_work (work_agent)
-							tid := tid + 1
+						if attached l_listening_socket.accepted as l_incoming_connection_socket then
+							-- Incoming connection
+							connection_id := connection_id + 1
+							process_connection (l_incoming_connection_socket, connection_id)
 						end
 					end
 					is_stop_requested := stop_requested_on_server
@@ -129,30 +126,39 @@ feature -- Inherited Features
 			retry
 		end
 
-	process_connection (a_socket: TCP_STREAM_SOCKET; id : INTEGER)
-			-- Process incoming connection
-		local
-			l_user_connection_handler : USER_CONNECTION_HANDLER
-    					-- last user connection served
+	new_connection (a_socket: TCP_STREAM_SOCKET; a_connection_id : NATURAL_64): HTTP_CONNECTION
 		do
-				client_sockets.force (a_socket,id)
-				a_socket.set_receive_buf_size (5000)
-				a_socket.set_linger_on (30)
-				if is_verbose then
-					log ("Incoming connection...(socket:" + a_socket.descriptor.out + ")")
-					log ("Number of clients:[ " + client_sockets.count.out + " ]")
-				end
-					--| FIXME jfiat [2011/11/03] : should use a Pool of Threads/Handler to process this connection
-					--| also handle permanent connection...?
+			create Result.make (a_socket, a_connection_id, agent process_request)
+		end
 
+	process_connection (a_socket: TCP_STREAM_SOCKET; a_connection_id: NATURAL_64)
+		local
+			conn: HTTP_CONNECTION
+		do
+			if is_verbose then
+				log ("------------------------------")
+				log ("#" + a_connection_id.out + " Incoming connection...(socket:" + a_socket.descriptor.out + ")")
+			end
 
-	            create l_user_connection_handler.make (id, a_socket.descriptor, is_verbose)
-	             	-- create new user connection handler to serve the request 	
-				receive_message_and_send_reply (l_user_connection_handler)
-				if client_sockets.has_key (id) then
-					client_sockets.remove (id)
-				end
-				a_socket.cleanup
+			conn := new_connection (a_socket, a_connection_id)
+			conn.set_is_verbose (is_verbose)
+
+			pool.add_work (agent conn.execute)
+		end
+
+feature -- Request processing
+
+	process_request (a_handler: USER_CONNECTION_HANDLER; a_socket: TCP_STREAM_SOCKET)
+			-- Process request ...
+		require
+			a_handler_attached: a_handler /= Void
+			a_uri_attached: a_handler.uri /= Void
+			no_error: a_handler /= Void implies not a_handler.has_error
+			a_method_attached: a_handler.method /= Void
+			a_header_map_attached: a_handler.request_header_map /= Void
+			a_header_text_attached: a_handler.request_header /= Void
+			a_socket_attached: a_socket /= Void
+		deferred
 		end
 
 feature -- Event
@@ -262,18 +268,13 @@ feature -- Execution
 --		deferred
 --		end
 
-
-
-	receive_message_and_send_reply (user_connection: USER_CONNECTION_HANDLER)
-		deferred
-		end
+--	receive_message_and_send_reply (user_connection: USER_CONNECTION_HANDLER)
+--		deferred
+--		end
 
 feature -- Connection Pool
 
-    client_sockets  : HASH_TABLE[TCP_STREAM_SOCKET,INTEGER]
-		 -- client sockets
-
-    pool : THREAD_POOL[ANY]
+    pool : THREAD_POOL [ANY]
 
 invariant
 	server_attached: server /= Void

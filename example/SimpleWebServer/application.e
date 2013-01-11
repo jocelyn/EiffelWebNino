@@ -21,7 +21,7 @@ feature {NONE} -- Initialization
 		local
 			l_server : HTTP_SERVER
 			l_cfg: HTTP_SERVER_CONFIGURATION
-			l_http_handler : HTTP_HANDLER
+			l_http_handler : HTTP_LISTENER
 		do
 			create l_cfg.make
 			l_cfg.http_server_port := 9_000
