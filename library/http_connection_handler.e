@@ -12,7 +12,7 @@ deferred class
 inherit
 	ANY
 
-	CONCURRENT_POOL_ITEM
+	CONCURRENT_POOL_ITEM [TCP_STREAM_SOCKET]
 		redefine
 			release
 		end
@@ -120,6 +120,11 @@ feature -- Access
 
 feature -- Execution
 
+	set_pool_data (d: separate TCP_STREAM_SOCKET)
+		do
+			set_client_socket (d)
+		end
+
 	execute
 		local
 			l_remote_info: detachable like remote_info
@@ -154,7 +159,7 @@ feature {CONCURRENT_POOL, HTTP_HANDLER} -- Basic operation
 	release
 		do
 			reset
-			Precursor
+--			Precursor --- FOR NOW
 		end
 
 feature -- Request processing

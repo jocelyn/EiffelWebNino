@@ -9,17 +9,17 @@ feature
 	make (p: INTEGER)
 		local
 			cfg: HTTP_SERVER_CONFIGURATION
-			f: PLAIN_TEXT_FILE
+--			f: PLAIN_TEXT_FILE
 		do
 			create cfg.make
 			setup (cfg, p)
 
 			create server.make (cfg)
 
-			create f.make_with_name ("server.log")
-			f.open_append
-			server.set_log_output (f)
-			log_output := f
+--			create f.make_with_name ("server.log")
+--			f.open_append
+--			server.set_log_output (f)
+--			log_output := f
 
 			create {TEST_HANDLER} handler.make (server)
 		end
@@ -91,10 +91,11 @@ feature {NONE} -- Implementation
 	setup (a_cfg: HTTP_SERVER_CONFIGURATION; a_port: INTEGER)
 		do
 			a_cfg.http_server_port := a_port
-			a_cfg.set_max_concurrent_connections (1000)
+			a_cfg.set_max_concurrent_connections (5)
 			debug ("nino")
 				a_cfg.set_is_verbose (True)
 			end
+			a_cfg.set_is_verbose (True)
 		end
 
 end

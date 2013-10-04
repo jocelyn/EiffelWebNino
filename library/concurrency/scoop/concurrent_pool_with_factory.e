@@ -7,10 +7,10 @@ note
 	revision: "$Revision$"
 
 class
-	CONCURRENT_POOL_WITH_FACTORY [G -> CONCURRENT_POOL_ITEM]
+	CONCURRENT_POOL_WITH_FACTORY [G -> CONCURRENT_POOL_ITEM[H], H]
 
 inherit
-	CONCURRENT_POOL [G]
+	CONCURRENT_POOL [G, H]
 		rename
 			make as old_make
 		end
@@ -29,7 +29,7 @@ feature {NONE} -- Initialization
 
 feature -- Access
 
-	factory: separate CONCURRENT_POOL_FACTORY [G]
+	factory: separate CONCURRENT_POOL_FACTORY [G, H]
 
 	factory_new_separate_item (f: like factory): like new_separate_item
 		do

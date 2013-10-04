@@ -112,7 +112,7 @@ feature -- Execution
 							if is_verbose then
 								log ("#" + request_counter.out + "# Incoming connection...(socket:" + l_accepted_socket.descriptor.out + ")")
 							end
-							process_connection (l_accepted_socket, pool, request_counter)
+							process_connection (l_accepted_socket, pool)
 						else
 							is_stop_requested := stop_requested_on_server (server) or else stop_requested_on_pool (pool)
 						end
@@ -145,7 +145,7 @@ feature -- Execution
 			retry
 		end
 
-	process_connection (a_socket: TCP_STREAM_SOCKET; a_pool: like pool; rq_id: INTEGER)
+	process_connection (a_socket: TCP_STREAM_SOCKET; a_pool: like pool)
 			-- Process incoming connection
 			-- note that the precondition matters for scoop synchronization.
 		require
@@ -154,14 +154,18 @@ feature -- Execution
 			is_stop_requested := is_stop_requested or a_pool.stop_requested
 			if is_stop_requested then
 				a_socket.cleanup
-			elseif attached a_pool.separate_item as h then
-				process_connection_handler (h, a_socket, force_single_threaded)
 			else
-				check is_not_full: False end
-				a_socket.cleanup
---			else
---				a_pool.process_incoming_connection (a_socket, force_single_threaded)
+				a_pool.add_incoming_socket (create {separate TCP_STREAM_SOCKET}.make_duplicate (a_socket))
+--				a_socket.cleanup
 			end
+--			if attached a_pool.separate_item as h then
+--				process_connection_handler (h, a_socket, force_single_threaded)
+--			else
+--				check is_not_full: False end
+--				a_socket.cleanup
+----			else
+----				a_pool.process_incoming_connection (a_socket, force_single_threaded)
+--			end
 		end
 
 	process_connection_handler (hdl: separate HTTP_CONNECTION_HANDLER; a_socket: TCP_STREAM_SOCKET; a_flag_force_single_threaded: BOOLEAN)

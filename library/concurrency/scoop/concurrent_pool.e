@@ -5,10 +5,7 @@ note
 	revision: "$Revision$"
 
 deferred class
-	CONCURRENT_POOL [G -> CONCURRENT_POOL_ITEM]
-
-inherit
-	ITERABLE [detachable separate G]
+	CONCURRENT_POOL [G -> CONCURRENT_POOL_ITEM [H], H]
 
 feature {NONE} -- Initialization
 
@@ -16,9 +13,10 @@ feature {NONE} -- Initialization
 		do
 			capacity := n
 			create items.make_empty (n)
-			create available_items.make_empty (n)
+--			create available_items.make_empty (n)
 --			create busy_items.make_filled (False, n)
 			create busy_items.make_empty (n)
+			create queue.make (0)
 		end
 
 feature -- Access
@@ -33,6 +31,24 @@ feature -- Access
 	capacity: INTEGER
 
 	stop_requested: BOOLEAN
+
+	has_queued_item: BOOLEAN
+		do
+			Result := not queue.is_empty
+		end
+
+	next_queued_item: detachable separate H
+		do
+			if queue.is_empty then
+			else
+				Result := queue.first
+				queue.start
+				queue.remove
+				if Result /= Void then
+					count := count + 1
+				end
+			end
+		end
 
 feature -- Access
 
@@ -85,13 +101,12 @@ feature -- Access
 			end
 		end
 
-	new_cursor: ITERATION_CURSOR [detachable separate G]
-			-- Fresh cursor associated with current structure
-		do
-			Result := items.new_cursor
-		end
-
 feature -- Basic operation
+
+	process_data (a_data: separate H)
+		do
+			queue.force (a_data)
+		end
 
 	gracefull_stop
 		do
@@ -104,9 +119,11 @@ feature {NONE} -- Internal
 
 	busy_items: SPECIAL [BOOLEAN]
 
-	available_items: SPECIAL [INTEGER]
+--	available_items: SPECIAL [INTEGER]
 
-	last_available_index: INTEGER
+--	last_available_index: INTEGER
+
+	queue: ARRAYED_LIST [separate H]
 
 feature {CONCURRENT_POOL_ITEM} -- Change
 
@@ -146,10 +163,19 @@ feature -- Change
 	set_count (n: INTEGER)
 		local
 			g: detachable separate G
+			i: like new_separate_item
 		do
 			capacity := n
 			items.fill_with (g, 0, n - 1)
 			busy_items.fill_with (False, 0, n - 1)
+			across
+				1 |..| n as ic
+			loop
+				i := new_separate_item
+				items[ic.item - 1] := i
+				register_item (i)
+				busy_items[ic.item - 1] := True
+			end
 		end
 
 feature {NONE} -- Implementation
@@ -161,6 +187,7 @@ feature {NONE} -- Implementation
 	register_item (a_item: like new_separate_item)
 		do
 			a_item.set_pool (Current)
+			a_item.pool_execute
 		end
 
 note

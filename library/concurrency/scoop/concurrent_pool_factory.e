@@ -5,7 +5,7 @@ note
 	revision: "$Revision$"
 
 deferred class
-	CONCURRENT_POOL_FACTORY [G -> CONCURRENT_POOL_ITEM]
+	CONCURRENT_POOL_FACTORY [G -> CONCURRENT_POOL_ITEM [H], H]
 
 feature -- Access
 

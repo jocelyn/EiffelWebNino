@@ -5,11 +5,53 @@ note
 	revision: "$Revision$"
 
 deferred class
-	CONCURRENT_POOL_ITEM
+	CONCURRENT_POOL_ITEM [H]
 
 feature	{NONE} -- Access
 
-	pool: detachable separate CONCURRENT_POOL [CONCURRENT_POOL_ITEM]
+	pool: detachable separate CONCURRENT_POOL [CONCURRENT_POOL_ITEM [H], H]
+
+	next_data (p: attached like pool): detachable separate H
+		require
+			p.has_queued_item or is_pool_stopping (p)
+		do
+			Result := p.next_queued_item
+		end
+
+	is_pool_stopping (p: attached like pool): BOOLEAN
+		do
+			Result := p.stop_requested
+		end
+
+feature {CONCURRENT_POOL} -- Execution
+
+	pool_execute
+		local
+			done: BOOLEAN
+		do
+			from
+			until
+				done
+			loop
+				if attached pool as p then
+					if attached next_data (p) as d then
+						set_pool_data (d)
+						execute
+					end
+					done := is_pool_stopping (p)
+				else
+					done := True
+				end
+			end
+		end
+
+	set_pool_data (d: separate H)
+		deferred
+		end
+
+	execute
+		deferred
+		end
 
 feature {CONCURRENT_POOL} -- Change
 
@@ -29,7 +71,7 @@ feature {CONCURRENT_POOL, HTTP_HANDLER} -- Basic operation
 
 feature {NONE} -- Implementation
 
-	pool_release (p: separate CONCURRENT_POOL [CONCURRENT_POOL_ITEM])
+	pool_release (p: separate CONCURRENT_POOL [CONCURRENT_POOL_ITEM [H], H])
 		do
 			p.release_item (Current)
 		end
