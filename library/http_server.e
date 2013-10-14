@@ -283,8 +283,11 @@ feature -- Output
 
 	log (a_message: separate READABLE_STRING_8)
 			-- Log `a_message'
+		local
+			m: STRING
 		do
-			output.put_string (a_message)
+			create m.make_from_separate (a_message)
+			output.put_string (m)
 			output.put_new_line
 		end
 
