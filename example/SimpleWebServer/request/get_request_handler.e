@@ -2,12 +2,7 @@
 	GET_REQUEST_HANDLER
 
 inherit
-	HTTP_REQUEST_HANDLER
-
-	HTTP_SERVER_SHARED_CONFIGURATION
-		undefine
-			default_create
-		end
+	HTTP_REQUEST
 
 	SHARED_URI_CONTENTS_TYPES
 		undefine
@@ -15,6 +10,11 @@ inherit
 		end
 
 	HTTP_CONSTANTS
+		undefine
+			default_create
+		end
+
+	SHARED_APPLICATION_CONFIGURATION
 		undefine
 			default_create
 		end
@@ -42,9 +42,18 @@ feature -- Execution
 			fname: STRING_8
 			f: RAW_FILE
 			ctype, extension: detachable STRING_8
+			e: EXECUTION_ENVIRONMENT
+			i64: INTEGER_64
 		do
 			answer.reset
 			if script_name.is_equal ("/") then
+				process_default
+				answer.set_content_type ("text/html")
+			elseif script_name.is_equal ("/sleep") then
+				create e
+				i64 := {INTEGER_64} 1_000_000_000
+				e.sleep ({INTEGER_64} 10 * i64)
+
 				process_default
 				answer.set_content_type ("text/html")
 			else
@@ -84,6 +93,9 @@ feature -- Execution
 				answer.set_content_length (0)
 			end
 
+			if attached headers.at (connection) as l_connection then
+				answer.set_connection_type (l_connection)
+			end
 				--| Output the result
 			socket.put_string (answer.reply_header + answer.reply_text)
 		end
@@ -94,7 +106,14 @@ feature -- Execution
 			html: STRING_8
 		do
 			answer.set_reply_text ("")
-			html := " <html> <head> <title> NINO HTTPD </title> " + "    </head>   " + "       <body>    " + " <h1> Welcome to NINO HTTPD! </h1> " + " <p>  Default page  " + " </p> " + " </body> " + " </html> "
+			html := "<html>" +
+					" <head><title> NINO HTTPD </title></head>" +
+					" <body>" +
+					"  <h1>Welcome to NINO HTTPD!</h1>" +
+					"  <p> Default page</p>" +
+					($Current).out +
+					" </body>" +
+					"</html>"
 			answer.append_reply_text (html)
 		end
 
@@ -168,5 +187,8 @@ feature -- Execution
 			answer.append_reply_text (html1 + htmldir + html2)
 		end
 
+note
+	copyright: "2011-2013, Javier Velilla, Jocelyn Fiat and others"
+	license: "Eiffel Forum License v2 (see http://www.eiffel.com/licensing/forum.txt)"
 end -- class GET_REQUEST_HANDLER
 

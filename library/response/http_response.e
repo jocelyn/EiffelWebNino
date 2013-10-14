@@ -26,6 +26,9 @@ feature -- creation
 			reason_phrase := ok_message
 			content_type_data := text_html
 			set_reply_text (Void)
+			create connection_type.make_empty
+		ensure
+			connection_type_set: connection_type.is_empty
 		end
 
 feature -- Recycle
@@ -48,6 +51,9 @@ feature -- response header fields
 
 	content_type_data: STRING
 			-- type of content in this reply (eg. text/html)
+
+	connection_type: STRING
+		-- By default `empty'
 
 feature -- Element change
 
@@ -98,6 +104,16 @@ feature -- Access: send reply
 			Result.append (Content_length + ": ")
 			Result.append (content_length_data)
 			Result.append (crlf)
+
+			if not connection_type.is_empty then
+					-- To close the connection send `close'
+					-- `Keep-Alive for HTTP 1.0 clients'
+					-- by default, Connection header is not sent, implies
+					-- a persitent connection
+				Result.append ("Connection: " + connection_type)
+				Result.append (crlf)
+			end
+
 			Result.append (crlf)
 			-- TODO: could add the size of data being sent here and
 			-- then keep the connection alive
@@ -122,6 +138,14 @@ feature -- Access: send reply
 
 feature -- Change element: send reply
 
+	set_connection_type (a_connection_type: STRING)
+			-- Set `connection_type' with `a_connection_type'
+		do
+			connection_type := a_connection_type
+		ensure
+			connnection_type_set: connection_type = a_connection_type
+		end
+
 	set_reply_text (new_text: detachable STRING)
 			-- text could be Void
 		do
@@ -142,6 +166,6 @@ feature -- Change element: send reply
 		end
 
 note
-	copyright: "2011-2011, Javier Velilla and others"
+	copyright: "2011-2013, Javier Velilla, Jocelyn Fiat and others"
 	license: "Eiffel Forum License v2 (see http://www.eiffel.com/licensing/forum.txt)"
 end
