@@ -18,6 +18,7 @@ feature {NONE} -- Initialization
 			max_tcp_clients := 100
 			socket_accept_timeout := 1_000
 			socket_connect_timeout := 5_000
+			keep_alive_timeout := 5
 		end
 
 feature -- Access
@@ -37,6 +38,10 @@ feature -- Access
 
 	is_verbose: BOOLEAN assign set_is_verbose
 			-- Display verbose message to the output?
+
+	keep_alive_timeout: INTEGER assign set_keep_alive_timeout
+			-- Persistent connection timeout
+			-- Timeout unit in Seconds.	
 
 feature -- Element change
 
@@ -86,6 +91,16 @@ feature -- Element change
 		do
 			is_verbose := b
 		end
+
+
+	set_keep_alive_timeout (a_seconds: like keep_alive_timeout)
+			-- Set `keep_alive_timeout' with `a_seconds'
+		do
+			keep_alive_timeout := a_seconds
+		ensure
+			keep_alive_timeout_set: keep_alive_timeout = a_seconds
+		end
+
 
 note
 	copyright: "2011-2013, Javier Velilla, Jocelyn Fiat and others"
